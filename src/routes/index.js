@@ -1,6 +1,7 @@
 const express = require('express')
 const userRoutes = require('./userRoute')
 const blogRoutes =require('./blogRoute')
+const dashboardRoute = require('./dashboard')
 
 const router = express.Router();
 router.get('/',(req,res)=>{
@@ -10,6 +11,6 @@ router.get('/',(req,res)=>{
 
 router.use('/user',userRoutes);
 router.use('/blog',blogRoutes)
-
+router.use('/dashboard',dashboardRoute)
 
 module.exports =  router

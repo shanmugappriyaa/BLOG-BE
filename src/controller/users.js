@@ -1,6 +1,7 @@
-const express = require('mongoose')
+
 const userModel = require('../models/user')
 const Auth = require('../common/Auth.js')
+
 const create = async(req,res)=>{
     try {
         let user =  await userModel.findOne({email:req.body.email})
@@ -37,7 +38,7 @@ const login = async(req,res)=>{
                     lastName:user.lastName,
                     email:user.email,
                 })
-                let userData = await userModel.findOne({email:req.body.email},{_id:0,password:0,createdAt:0,email:0})
+                let userData = await userModel.findOne({email:req.body.email},{password:0,createdAt:0,email:0})
                 res.status(200).send({
                     message:"Login Successfull",
                     token,

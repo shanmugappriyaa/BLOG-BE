@@ -17,4 +17,48 @@ const createToken = async(payload)=>{
     })
     return token
 }
-module.exports = {hashPassword,hashCompare,createToken}
+
+
+
+const decodeToken = async(token)=>{
+    const payload = await jwt.decode(token)
+    return payload
+}
+
+const validate = async(req,res,next)=>{
+    let token = req.headers.authorization?.split(" ")[1]
+    if(token)
+    {
+        let payload = await decodeToken(token)
+        req.headers.userId = payload.id
+        let currentTime = (+new Date())/1000
+        
+        if(currentTime<payload.exp)
+        {
+            next()
+        }
+        else
+            res.status(401).send({message:"Token Expired"})
+    }
+    else
+    {
+        res.status(401).send({message:"No Token Found"})
+    }
+}
+
+const adminGaurd = async(req,res,next)=>{
+    let token = req.headers.authorization?.split(" ")[1]
+    if(token)
+    {
+        let payload = await decodeToken(token)
+        if(payload.role==='admin')
+            next()
+        else
+            res.status(401).send({message:"Only Admins are allowed"})
+    }
+    else
+    {
+        res.status(401).send({message:"No Token Found"})
+    }
+}
+module.exports = {hashPassword,hashCompare,createToken,decodeToken,validate,adminGaurd}
