@@ -1,19 +1,24 @@
 const blogModel = require("../models/blog");
 const Status = require("../common/utils");
+const { cloudinaryUploadImg } = require("../common/cloudinary");
+const fs = require("fs");
 
 const createBlog = async (req, res) => {
   try {
     const { title, imageUrl, desc, shortDesc } = req.body;
-    if (title && imageUrl && desc) {
-      await blogModel.create({
+    if (title && desc) {
+      const result = await blogModel.create({
         title,
-        imageUrl,
         desc,
         shortDesc,
+        createdUserName: req.headers.firstName,
         createdBy: req.headers.userId,
+        blogstatus: "PENDING",
       });
+
       res.status(201).send({
         messasge: "blog created successfully",
+        result,
       });
     } else {
       res.status(400).send({
@@ -30,14 +35,46 @@ const createBlog = async (req, res) => {
 
 const getAllBlogs = async (req, res) => {
   try {
-    let allBlogs = await blogModel
-      .find({}, { _id: 1, title: 1, imageUrl: 1, shortDesc: 1, createdAt: 1 })
-      .sort({ createdAt: 1 });
-    res.status(200).send({
-      messasge: "blogs fetched successfully",
+    if (req?.headers?.role == "admin") {
+      let allBlogs = await blogModel
+        .find(
+          {},
+          {
+            _id: 1,
+            title: 1,
+            imageUrl: 1,
+            shortDesc: 1,
+            createdAt: 1,
+            blogstatus: 1,
+            createdUserName: 1,
+          }
+        )
+        .sort({ createdAt: 1 });
+      res.status(200).send({
+        messasge: "blogs fetched successfully",
+        allBlogs,
+      });
+    } else {
+      let allBlogs = await blogModel
+        .find(
+          { blogstatus: "APPROVED" },
+          {
+            _id: 1,
+            title: 1,
+            imageUrl: 1,
+            shortDesc: 1,
+            createdAt: 1,
+            blogstatus: 1,
+            createdUserName: 1,
+          }
+        )
+        .sort({ createdAt: 1 });
+      res.status(200).send({
+        messasge: "blogs fetched successfully",
 
-      allBlogs,
-    });
+        allBlogs,
+      });
+    }
   } catch (error) {
     res.status(500).send({
       messasge: "Internal server Error",
@@ -66,16 +103,33 @@ const getBlogById = async (req, res) => {
     });
   }
 };
+const getBlogByStatus = async (req, res) => {
+  let blogstatus = req.params.status;
 
+  try {
+    let blog = await blogModel.find({ blogstatus: blogstatus });
+
+    res.status(200).send({
+      blog,
+    });
+  } catch (error) {
+    res.status(500).send({
+      messasge: "Internal server Error",
+      error: error.messasge,
+    });
+  }
+};
 const editBlog = async (req, res) => {
-
   try {
     let blogId = req.params.id;
     if (blogId) {
       const { title, imageUrl, desc } = req.body;
       let blog = await blogModel.findOne({ _id: req.params.id });
-      (blog.title = title), (blog.desc = desc), (modifiedAt = Date.now());
-  
+      (blog.title = title),
+        (blog.desc = desc),
+        (blog.blogstatus = "PENDING"),
+        (modifiedAt = Date.now());
+
       await blog.save();
       res.status(200).send({
         messasge: "blog updated successfully",
@@ -90,26 +144,17 @@ const editBlog = async (req, res) => {
     });
   }
 };
-
 const updateBlogStatus = async (req, res) => {
   try {
     const blogId = req.params.id;
-    const status = req.params.status;
-    if (blogId && status) {
-      const { reason } = req.body;
+    const { blogstatus } = req.body;
+    console.log("blogId,blogstatus-->", blogId, blogstatus, req.headers.userId);
+    if (blogId && blogstatus) {
+      // const { reason } = req.body;
       let blog = await blogModel.findById(blogId);
-      if (status === Status.APPROVED) {
-        blog.status = Status.APPROVED;
-        blog.approvedBy = req.headers.userId;
-        blog.reason = "";
-      } else if (status === Status.REJECTED) {
-        blog.status = Status.REJECTED;
-        blog.rejectedBy = req.headers.userId;
-        blog.reason = reason;
-      } else {
-        blog.status = Status.PENDING;
-      }
-      blog.modifiedAt = Date.now();
+      (blog.blogstatus = blogstatus),
+        (blog.approvedBy = req.headers.userId),
+        (blog.modifiedAt = Date.now());
       await blog.save();
 
       res.status(200).send({
@@ -125,17 +170,67 @@ const updateBlogStatus = async (req, res) => {
     });
   }
 };
+
 const getBlogsByUserId = async (req, res) => {
   try {
     let blogs = await blogModel
       .find(
-        { createdBy: req.headers.userId },
-        { _id: 1, title: 1, imageUrl: 1, createdAt: 1, status: 1 }
+        { createdBy: req.params.id },
+        {
+          _id: 1,
+          title: 1,
+          imageUrl: 1,
+          createdAt: 1,
+          shortDesc:1,
+          blogstatus: 1,
+          createdUserName: 1,
+        }
       )
       .sort({ createdAt: 1 });
     res.status(200).send({
       message: "Blogs Fetched Successfully",
       blogs,
+    });
+  } catch (error) {
+    res.status(500).send({
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
+const uploadImages = async (req, res) => {
+  const { id } = req.params;
+  console.log(req.files);
+  try {
+    const uploader = (path) => cloudinaryUploadImg(path);
+    const urls = [];
+    const files = req.files;
+    for (let i = 0; i < req.files.length; i++) {
+      let locaFilePath = req.files[i].path;
+      const newpath = await uploader(locaFilePath);
+
+      urls.push({
+        url: newpath?.secure_url,
+        asset_id: newpath?.asset_id,
+        public_id: newpath?.public_id,
+      });
+      fs.unlinkSync(locaFilePath);
+    }
+
+    const findBlog = await blogModel.findByIdAndUpdate(
+      id,
+      {
+        imageUrl: urls.map((file) => {
+          return file;
+        }),
+      },
+      { new: true }
+    );
+
+    res.status(200).send({
+      msg: "images uploaded Succssfully",
+      findBlog,
     });
   } catch (error) {
     res.status(500).send({
@@ -151,4 +246,6 @@ module.exports = {
   editBlog,
   getBlogsByUserId,
   updateBlogStatus,
+  getBlogByStatus,
+  uploadImages,
 };

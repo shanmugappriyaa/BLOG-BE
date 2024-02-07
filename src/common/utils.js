@@ -4,5 +4,6 @@ const Status={
     PENDING:"pending",
     REJECTED:"rejected"
 }
+const role ={ADMIN:"admin"}
 
 module.exports = {Status}
