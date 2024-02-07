@@ -19,22 +19,22 @@ const multerStorage = multer.diskStorage({
       cb({ message: "unsupported File Format" }, false);
     }
   };
-  const blogImgResize = async (req, res, next) => {
+  // const blogImgResize = async (req, res, next) => {
   
-    if (!req.files) return next();
-    await Promise.all(
-      req.files.map(async (file) => {
-        await sharp(file.path)
-          .resize(300, 300)
-          .toFormat("jp2")
-          .jpeg({ quality: 90 })
-          .toFile(`public/images/blogs/${file.filename}`)
-          .fs.unlinkSync(`public/images/blogs/${file.filename}`);
-          console.log('file.path---------------------------->', file.path)
-      })
-    );
-    next();
-  };
+  //   if (!req.files) return next();
+  //   await Promise.all(
+  //     req.files.map(async (file) => {
+  //       await sharp(file.path)
+  //         .resize(300, 300)
+  //         .toFormat("jp2")
+  //         .jpeg({ quality: 90 })
+  //         .toFile(`public/images/blogs/${file.filename}`)
+  //         .fs.unlinkSync(`public/images/blogs/${file.filename}`);
+  //         console.log('file.path---------------------------->', file.path)
+  //     })
+  //   );
+  //   next();
+  // };
   
   const uploadPhoto = multer({
     storage: multerStorage,
@@ -42,4 +42,4 @@ const multerStorage = multer.diskStorage({
     limits: { fieldSize: 1024*1024*10 },
   });
   
-  module.exports = { uploadPhoto, blogImgResize };
+  module.exports = { uploadPhoto };
