@@ -26,7 +26,7 @@ app.use(express.json());
 app.use(
   cors({
     credentials: true,
-    origin: "*",
+    origin: "https://shanmu-blog.netlify.app",
     methods: ["GET", "POST"],
     optionSuccessStatus: 200,
   })
