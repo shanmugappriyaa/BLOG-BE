@@ -25,8 +25,9 @@ app.all("/*", function (req, res, next) {
 app.use(express.json());
 app.use(
   cors({
-    origin: "*",
     credentials: true,
+    origin: "*",
+    methods: ["GET", "POST"],
     optionSuccessStatus: 200,
   })
 );
