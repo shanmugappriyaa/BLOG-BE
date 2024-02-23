@@ -49,7 +49,7 @@ const login = async (req, res) => {
         });
       }
     } else {
-      res.status(400).send({ message: " user id,password is incorrect" });
+      res.status(401).send({ message: " user id,password is incorrect" });
     }
   } catch (error) {
     res.status(500).send({
