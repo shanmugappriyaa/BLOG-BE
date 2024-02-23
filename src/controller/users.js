@@ -25,11 +25,13 @@ const create = async (req, res) => {
 const login = async (req, res) => {
   try {
     let user = await userModel.findOne({ email: req.body.email });
+    console.log('user========> ',user)
     if (user) {
       let hashCompare = await Auth.hashCompare(
         req.body.password,
         user.password
       );
+      console.log('hashCompare========> ',hashCompare)
       if (hashCompare) {
         let token = await Auth.createToken({
           id: user._id,
@@ -38,10 +40,12 @@ const login = async (req, res) => {
           email: user.email,
           role: user?.role,
         });
+        console.log('token========> ',token)
         let userData = await userModel.findOne(
           { email: req.body.email },
           { password: 0, createdAt: 0, email: 0 }
         );
+        console.log('userData========> ',userData)
         res.status(200).send({
           message: "Login Successfull",
           token,
@@ -49,7 +53,7 @@ const login = async (req, res) => {
         });
       }
     } else {
-      res.status(401).send({ message: " user id,password is incorrect" });
+      res.status(401).send({ message: "user id,password is incorrect" });
     }
   } catch (error) {
     res.status(500).send({
