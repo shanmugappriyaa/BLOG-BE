@@ -25,7 +25,7 @@ const create = async (req, res) => {
 const login = async (req, res) => {
   try {
     let user = await userModel.findOne({ email: req.body.email });
-    console.log('user========> ',user)
+    console.log('user========> ',user, req.body)
     if (user) {
       let hashCompare = await Auth.hashCompare(
         req.body.password,
